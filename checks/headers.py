@@ -31,25 +31,25 @@ def check_headers(url: str) -> list[Finding]:
     header_checks = {
         "content-security-policy": {
             "check_name": "Content-Security-Policy",
-            "severity": "high",
+            "severity": "medium",
             "detail": "CSP header is missing. Browsers won't know which sources are trusted.",
             "fix": "Add 'Content-Security-Policy: default-src \\'self\\'' to your server headers. In Express: app.use(helmet()). In Flask: use flask-talisman.",
         },
         "strict-transport-security": {
             "check_name": "Strict-Transport-Security (HSTS)",
-            "severity": "high",
+            "severity": "medium",
             "detail": "HSTS header is missing. Browsers may load the site over HTTP.",
             "fix": "Add 'Strict-Transport-Security: max-age=31536000; includeSubDomains' to your server headers.",
         },
         "x-frame-options": {
             "check_name": "X-Frame-Options",
-            "severity": "medium",
+            "severity": "low",
             "detail": "X-Frame-Options is missing. Site can be embedded in an iframe — clickjacking risk.",
             "fix": "Add 'X-Frame-Options: DENY' or 'SAMEORIGIN' to your server headers.",
         },
         "x-content-type-options": {
             "check_name": "X-Content-Type-Options",
-            "severity": "medium",
+            "severity": "low",
             "detail": "X-Content-Type-Options is missing. Browser may MIME-sniff responses.",
             "fix": "Add 'X-Content-Type-Options: nosniff' to your server headers.",
         },

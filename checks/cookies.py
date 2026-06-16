@@ -52,14 +52,22 @@ def check_single_cookie(cookie) -> list[Finding]:
     name = cookie.name
 
     # ── HttpOnly ──────────────────────────────────────────────
+    name_lower = name.lower()
+    is_session_cookie = any(x in name_lower for x in ['session', 'auth', 'token', 'jwt', 'sid'])
+
     if not cookie.has_nonstandard_attr("HttpOnly") and not cookie._rest.get("HttpOnly"):
+        severity = "high" if is_session_cookie else "low"
+        detail = f"Cookie '{name}' is missing HttpOnly flag. JavaScript can read it."
+        if is_session_cookie:
+            detail += " Since this looks like a session/auth cookie, XSS attacks could steal it."
+            
         findings.append(Finding(
             check_name=f"Cookie: {name} — HttpOnly",
             category="cookies",
             passed=False,
-            severity="high",
-            detail=f"Cookie '{name}' is missing HttpOnly flag. JavaScript can read this cookie — XSS attacks can steal it.",
-            fix=f"Set HttpOnly flag on '{name}': Set-Cookie: {name}=value; HttpOnly; Secure; SameSite=Strict",
+            severity=severity,
+            detail=detail,
+            fix=f"If '{name}' is a session cookie, set HttpOnly. If it is an analytics/tracking cookie, it is safe to ignore.",
             evidence=f"Cookie: {name}"
         ))
     else:
@@ -79,9 +87,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             check_name=f"Cookie: {name} — Secure",
             category="cookies",
             passed=False,
-            severity="high",
-            detail=f"Cookie '{name}' is missing Secure flag. Cookie can be transmitted over HTTP — vulnerable to interception.",
-            fix=f"Set Secure flag on '{name}': Set-Cookie: {name}=value; HttpOnly; Secure; SameSite=Strict",
+            severity="medium",
+            detail=f"Cookie '{name}' is missing Secure flag. Cookie can be transmitted over HTTP.",
+            fix=f"Set Secure flag on '{name}'.",
             evidence=f"Cookie: {name}"
         ))
     else:
@@ -103,9 +111,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             check_name=f"Cookie: {name} — SameSite",
             category="cookies",
             passed=False,
-            severity="medium",
-            detail=f"Cookie '{name}' is missing SameSite attribute. Vulnerable to CSRF attacks.",
-            fix=f"Set SameSite on '{name}': Set-Cookie: {name}=value; HttpOnly; Secure; SameSite=Strict",
+            severity="low",
+            detail=f"Cookie '{name}' is missing SameSite attribute.",
+            fix=f"Set SameSite on '{name}' if it is a sensitive cookie.",
             evidence=f"Cookie: {name}"
         ))
     else:
