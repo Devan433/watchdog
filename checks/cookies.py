@@ -53,7 +53,12 @@ def check_single_cookie(cookie) -> list[Finding]:
 
     # ── HttpOnly ──────────────────────────────────────────────
     name_lower = name.lower()
-    is_session_cookie = any(x in name_lower for x in ['session', 'auth', 'token', 'jwt', 'sid'])
+    # CSRF tokens are intentionally readable by JS — exclude them from session detection
+    is_csrf_cookie = 'csrf' in name_lower or 'xsrf' in name_lower
+    is_session_cookie = (
+        any(x in name_lower for x in ['session', 'auth', 'token', 'jwt', 'sid'])
+        and not is_csrf_cookie
+    )
 
     if not cookie.has_nonstandard_attr("HttpOnly") and not cookie._rest.get("HttpOnly"):
         severity = "high" if is_session_cookie else "low"
