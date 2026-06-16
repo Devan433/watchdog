@@ -1,8 +1,8 @@
-# PreFlight (Security Linter)
+# Watchdog (Security Linter)
 
-**PreFlight** is a pre-deployment security linting tool designed for developers. It allows engineering teams to scan a web application URL prior to launching, providing a comprehensive report on common security misconfigurations, exposed secrets, and deployment risks. 
+**Watchdog** is a pre-deployment security linting tool designed for developers. It allows engineering teams to scan a web application URL prior to launching, providing a comprehensive report on common security misconfigurations, exposed secrets, and deployment risks. 
 
-Unlike heavy penetration testing tools, PreFlight focuses on immediate, actionable fixes that developers can implement quickly to secure their web applications.
+Unlike heavy penetration testing tools, Watchdog focuses on immediate, actionable fixes that developers can implement quickly to secure their web applications.
 
 ## Key Features
 
@@ -37,8 +37,8 @@ Unlike heavy penetration testing tools, PreFlight focuses on immediate, actionab
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YourUsername/preflight-scanner.git
-   cd preflight-scanner
+   git clone https://github.com/Devan433/watchdog.git
+   cd watchdog
    ```
 
 2. Install dependencies:
