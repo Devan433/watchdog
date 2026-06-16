@@ -31,8 +31,20 @@ def check_cors(url: str) -> list[Finding]:
     acao = response_headers.get("access-control-allow-origin")
     acac = response_headers.get("access-control-allow-credentials")
 
-    # ── Check 1: Wildcard CORS ────────────────────────────────
-    if acao == "*":
+    # ── Check 1: Wildcard + credentials (worst case) ────────────
+    if acao == "*" and acac and acac.lower() == "true":
+        findings.append(Finding(
+            check_name="CORS Wildcard With Credentials",
+            category="cors",
+            passed=False,
+            severity="critical",
+            detail="Server allows wildcard origin AND credentials. Browsers block this but it signals a deeply misconfigured CORS policy.",
+            fix="Never combine Access-Control-Allow-Origin: * with Access-Control-Allow-Credentials: true. Use explicit origins.",
+            evidence=f"ACAO: {acao} | ACAC: {acac}"
+        ))
+
+    # ── Check 2: Wildcard CORS ────────────────────────────────
+    elif acao == "*":
         findings.append(Finding(
             check_name="CORS Wildcard Origin",
             category="cors",
@@ -43,7 +55,7 @@ def check_cors(url: str) -> list[Finding]:
             evidence=f"Access-Control-Allow-Origin: {acao}"
         ))
 
-    # ── Check 2: Reflecting evil origin ──────────────────────
+    # ── Check 3: Reflecting evil origin ──────────────────────
     elif acao == evil_origin:
         findings.append(Finding(
             check_name="CORS Origin Reflection",
@@ -53,18 +65,6 @@ def check_cors(url: str) -> list[Finding]:
             detail="Server reflects any Origin header back without validation. Any website can make credentialed requests to your API.",
             fix="Maintain an explicit allowlist of trusted origins and only reflect those. Never reflect arbitrary Origin headers.",
             evidence=f"Access-Control-Allow-Origin: {acao}"
-        ))
-
-    # ── Check 3: Wildcard + credentials (worst case) ──────────
-    elif acao == "*" and acac and acac.lower() == "true":
-        findings.append(Finding(
-            check_name="CORS Wildcard With Credentials",
-            category="cors",
-            passed=False,
-            severity="critical",
-            detail="Server allows wildcard origin AND credentials. Browsers block this but it signals a deeply misconfigured CORS policy.",
-            fix="Never combine Access-Control-Allow-Origin: * with Access-Control-Allow-Credentials: true. Use explicit origins.",
-            evidence=f"ACAO: {acao} | ACAC: {acac}"
         ))
 
     # ── Check 4: No CORS header (fine for non-APIs) ───────────

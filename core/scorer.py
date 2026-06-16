@@ -11,11 +11,19 @@ def calculate_score(findings: list[Finding]) -> tuple[int, str]:
 
     # ── Calculate penalty ─────────────────────────────────────
     total_penalty = 0
+    low_penalty = 0
+    MAX_LOW_PENALTY = 15  # cap low-severity penalties so minor issues don't destroy the grade
 
     for finding in failed:
         severity = finding.severity.lower()
         penalty = SEVERITY_WEIGHTS.get(severity, 0)
-        total_penalty += penalty
+        if severity == "low":
+            low_penalty += penalty
+        else:
+            total_penalty += penalty
+
+    # Apply capped low penalty
+    total_penalty += min(low_penalty, MAX_LOW_PENALTY)
 
     # ── Calculate raw score ───────────────────────────────────
     raw_score = 100 - total_penalty

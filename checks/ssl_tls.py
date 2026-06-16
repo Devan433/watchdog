@@ -119,9 +119,9 @@ def check_ssl(url: str) -> list[Finding]:
                 check_name="SSL Certificate Expiry",
                 category="ssl",
                 passed=False,
-                severity="high",
+                severity="medium",
                 detail=f"SSL certificate expires in {days_left} days",
-                fix="Renew your SSL certificate soon. On VPS: 'sudo certbot renew'",
+                fix="Renew your SSL certificate soon. Most hosting platforms (Render, Vercel, Netlify) auto-renew. On VPS: 'sudo certbot renew'",
                 evidence=f"Expires: {expire_date_str}"
             ))
         else:

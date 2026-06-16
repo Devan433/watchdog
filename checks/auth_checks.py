@@ -1,3 +1,4 @@
+import uuid
 import requests
 from core.models import Finding
 from config import TIMEOUT, HEADERS
@@ -7,6 +8,21 @@ def check_auth(url: str) -> list[Finding]:
     findings = []
 
     base_url = url.rstrip("/")
+
+    # ── Establish 404 Baseline (SPA False Positive Check) ─────
+    baseline_length = None
+    baseline_path = f"/watchdog-auth-test-{uuid.uuid4().hex}"
+    try:
+        baseline_resp = safe_request(
+            'GET',
+            f"{base_url}{baseline_path}",
+            headers=HEADERS,
+            allow_redirects=False
+        )
+        if baseline_resp.status_code == 200:
+            baseline_length = len(baseline_resp.content)
+    except Exception:
+        pass
 
     # ── Check 1: Admin routes without auth ────────────────────
     admin_paths = [
@@ -19,7 +35,7 @@ def check_auth(url: str) -> list[Finding]:
     ]
 
     for path in admin_paths:
-        result = probe_auth_required(base_url, path)
+        result = probe_auth_required(base_url, path, baseline_length)
         if result:
             findings.append(result)
 
@@ -34,7 +50,7 @@ def check_auth(url: str) -> list[Finding]:
     ]
 
     for path in api_paths:
-        result = probe_api_auth(base_url, path)
+        result = probe_api_auth(base_url, path, baseline_length)
         if result:
             findings.append(result)
 
@@ -65,7 +81,7 @@ def check_auth(url: str) -> list[Finding]:
     return findings
 
 
-def probe_auth_required(base_url: str, path: str) -> Finding | None:
+def probe_auth_required(base_url: str, path: str, baseline_length: int | None = None) -> Finding | None:
     full_url = f"{base_url}{path}"
 
     try:
@@ -81,13 +97,23 @@ def probe_auth_required(base_url: str, path: str) -> Finding | None:
 
     status = response.status_code
 
-    # 200 with no auth = problem
+    # 200 with no auth = potential problem
     if status == 200:
+        # SPA false positive check — if response matches the baseline 404 page, skip it
+        if baseline_length is not None:
+            content_len = len(response.content)
+            if baseline_length > 0:
+                diff_ratio = abs(content_len - baseline_length) / baseline_length
+                if diff_ratio < 0.10:
+                    return None
+            elif content_len == 0:
+                return None
+
         return Finding(
             check_name=f"Unprotected Admin Route: {path}",
             category="auth",
             passed=False,
-            severity="critical",
+            severity="high",
             detail=f"{path} returned HTTP 200 without any authentication. Admin interface may be publicly accessible.",
             fix=f"Protect {path} with authentication middleware. In Flask: use @login_required decorator. In Express: use passport.js middleware.",
             evidence=f"GET {full_url} → {status}"
@@ -110,7 +136,7 @@ def probe_auth_required(base_url: str, path: str) -> Finding | None:
     return None
 
 
-def probe_api_auth(base_url: str, path: str) -> Finding | None:
+def probe_api_auth(base_url: str, path: str, baseline_length: int | None = None) -> Finding | None:
     full_url = f"{base_url}{path}"
 
     try:
@@ -128,6 +154,16 @@ def probe_api_auth(base_url: str, path: str) -> Finding | None:
 
     if status != 200:
         return None
+
+    # SPA false positive check
+    if baseline_length is not None:
+        content_len = len(response.content)
+        if baseline_length > 0:
+            diff_ratio = abs(content_len - baseline_length) / baseline_length
+            if diff_ratio < 0.10:
+                return None
+        elif content_len == 0:
+            return None
 
     # ── API returned 200 — check if it has real data ──────────
     content_type = response.headers.get("content-type", "")
