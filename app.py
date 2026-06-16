@@ -28,6 +28,17 @@ def ratelimit_handler(e):
 MAX_CONCURRENT_SCANS = 10
 scan_semaphore = threading.Semaphore(MAX_CONCURRENT_SCANS)
 
+# ── Security Headers ──────────────────────────────────────────
+@app.after_request
+def add_security_headers(response):
+    response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    return response
+
 # ── URL validation ─────────────────────────────────────────────
 def is_valid_url(url: str) -> bool:
     pattern = re.compile(
