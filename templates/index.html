@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PreFlight - Pre-Deployment Security Linting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="top-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <path d="M9 12l2 2 4-4"></path>
+                </svg>
+                <span class="product-name">PreFlight</span>
+            </div>
+            <div class="nav-right">
+                <a href="#" class="nav-link">Documentation</a>
+                <a href="#" class="nav-link">GitHub</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-container">
+        
+        <!-- HERO SECTION -->
+        <section id="hero-section" class="hero">
+            <h1 class="hero-headline">Catch Security Risks Before You Deploy</h1>
+            <p class="hero-supporting">Analyze websites for common security mistakes, exposed secrets, weak configurations, and deployment risks.</p>
+            
+            <form id="scan-form" class="scan-form">
+                <div class="input-group">
+                    <input type="url" id="url-input" class="url-input" placeholder="https://example.com" required autocomplete="off" spellcheck="false">
+                    <button type="submit" class="primary-btn">Analyze Website</button>
+                </div>
+                <div id="form-error" class="form-error hidden"></div>
+            </form>
+        </section>
+
+        <!-- SCANNING EXPERIENCE (Hidden initially) -->
+        <section id="scanning-section" class="scanning-section hidden">
+            <div class="scanner-card">
+                <div class="spinner"></div>
+                <h2 class="scanning-title">Analyzing Application...</h2>
+                <div class="scan-steps">
+                    <!-- Steps injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- RESULTS DASHBOARD (Hidden initially) -->
+        <section id="results-section" class="results-section hidden">
+            
+            <!-- SECURITY SCORE SECTION -->
+            <div class="score-card main-card">
+                <div class="score-header">
+                    <h2 class="section-title">Security Score</h2>
+                    <div id="deployment-status" class="status-badge">Ready for Deployment</div>
+                </div>
+                <div class="score-display">
+                    <div id="score-value" class="score-value">86</div>
+                    <div class="score-max">/ 100</div>
+                    <div id="score-grade" class="score-grade">Grade: A</div>
+                </div>
+            </div>
+
+            <!-- RISK OVERVIEW -->
+            <div class="risk-overview grid-4">
+                <div class="stat-card">
+                    <div class="stat-label">Critical</div>
+                    <div id="stat-critical" class="stat-value text-critical">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">High</div>
+                    <div id="stat-high" class="stat-value text-high">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Medium</div>
+                    <div id="stat-medium" class="stat-value text-medium">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Low</div>
+                    <div id="stat-low" class="stat-value text-low">0</div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Main Column -->
+                <div class="main-column">
+                    <!-- RECOMMENDATIONS SECTION -->
+                    <div class="recommendations-section main-card">
+                        <h3 class="section-title">Prioritized Recommendations</h3>
+                        <ol id="recommendations-list" class="recommendations-list">
+                            <!-- JS injected -->
+                        </ol>
+                    </div>
+
+                    <!-- FINDINGS SECTION -->
+                    <div class="findings-section">
+                        <h3 class="section-title">Detailed Findings</h3>
+                        <div id="findings-container" class="findings-container">
+                            <!-- Findings injected via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar Column -->
+                <div class="sidebar-column">
+                    <!-- DEPLOYMENT CHECKLIST -->
+                    <div class="checklist-section main-card">
+                        <h3 class="section-title">Deployment Checklist</h3>
+                        <ul id="checklist-container" class="checklist">
+                            <!-- Checklist injected via JS -->
+                        </ul>
+                    </div>
+
+                    <!-- ATTACK SURFACE SECTION -->
+                    <div class="attack-surface-section main-card">
+                        <h3 class="section-title">Discovered Routes</h3>
+                        <p class="section-desc">Publicly exposed endpoints and routes found during analysis.</p>
+                        <div id="routes-container" class="routes-container">
+                            <!-- Routes injected via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
