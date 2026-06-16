@@ -53,13 +53,13 @@ def run_scan(url: str) -> dict:
                     fix="No action needed — scan timed out",
                     evidence=None
                 ))
-            except Exception as e:
+            except Exception:
                 all_findings.append(Finding(
                     check_name=f"{check_name} scan",
                     category=check_name,
                     passed=False,
                     severity="info",
-                    detail=f"{check_name} check failed: {str(e)}",
+                    detail=f"{check_name} check failed due to an internal error",
                     fix="No action needed — internal scan error",
                     evidence=None
                 ))
@@ -74,13 +74,13 @@ def run_scan(url: str) -> dict:
 def run_check(name: str, func, url: str) -> list[Finding]:
     try:
         return func(url)
-    except Exception as e:
+    except Exception:
         return [Finding(
             check_name=f"{name} scan",
             category=name,
             passed=False,
             severity="info",
-            detail=f"Check failed unexpectedly: {str(e)}",
+            detail=f"Check failed unexpectedly due to an internal error",
             fix="No action needed — internal error",
             evidence=None
         )]

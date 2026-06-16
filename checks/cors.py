@@ -1,6 +1,7 @@
 import requests
 from core.models import Finding
 from config import TIMEOUT, HEADERS
+from core.http_client import safe_request, SafeRequestException
 
 def check_cors(url: str) -> list[Finding]:
     findings = []
@@ -8,30 +9,20 @@ def check_cors(url: str) -> list[Finding]:
     evil_origin = "https://evil.com"
 
     try:
-        response = requests.get(
+        response = safe_request(
+            'GET',
             url,
             headers={**HEADERS, "Origin": evil_origin},
-            timeout=TIMEOUT,
             allow_redirects=True
         )
-    except requests.exceptions.ConnectionError:
+    except SafeRequestException as e:
         return [Finding(
             check_name="CORS Policy",
             category="cors",
             passed=False,
             severity="critical",
-            detail=f"Could not connect to {url}",
+            detail=f"Connection failed: {str(e)}",
             fix="Check the URL is correct and the site is live",
-            evidence=None
-        )]
-    except requests.exceptions.Timeout:
-        return [Finding(
-            check_name="CORS Policy",
-            category="cors",
-            passed=False,
-            severity="critical",
-            detail=f"Connection timed out after {TIMEOUT} seconds",
-            fix="Site is too slow or blocking requests",
             evidence=None
         )]
 

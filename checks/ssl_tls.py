@@ -1,16 +1,48 @@
 import ssl
 import socket
-import requests
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 from core.models import Finding
-from config import TIMEOUT, HEADERS
+from config import TIMEOUT
+from core.http_client import safe_request, SafeRequestException, SSRFDetectedException, is_safe_hostname
 
 def check_ssl(url: str) -> list[Finding]:
     findings = []
-    hostname = extract_hostname(url)
+    
+    try:
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+        port = parsed.port or 443
+    except ValueError:
+        return [Finding(
+            check_name="SSL Certificate Valid",
+            category="ssl",
+            passed=False,
+            severity="critical",
+            detail="Invalid URL format",
+            fix="Provide a valid URL",
+            evidence=None
+        )]
+
+    if not hostname:
+        return findings
+
+    # SSRF Protection
+    try:
+        safe_ip = is_safe_hostname(hostname)
+    except SSRFDetectedException as e:
+        return [Finding(
+            check_name="SSL Certificate Valid",
+            category="ssl",
+            passed=False,
+            severity="critical",
+            detail=str(e),
+            fix="Provide a public URL",
+            evidence=None
+        )]
 
     # ── Check 1: HTTPS at all ─────────────────────────────────
-    if url.startswith('http://'):
+    if parsed.scheme == 'http':
         findings.append(Finding(
             check_name="HTTPS Enforcement",
             category="ssl",
@@ -22,12 +54,7 @@ def check_ssl(url: str) -> list[Finding]:
         ))
         # check if it redirects to https
         try:
-            response = requests.get(
-                url,
-                headers=HEADERS,
-                timeout=TIMEOUT,
-                allow_redirects=True
-            )
+            response = safe_request('GET', url, allow_redirects=True)
             if response.url.startswith('https://'):
                 findings.append(Finding(
                     check_name="HTTP to HTTPS Redirect",
@@ -55,7 +82,7 @@ def check_ssl(url: str) -> list[Finding]:
     # ── Check 2: Certificate validity ─────────────────────────
     try:
         context = ssl.create_default_context()
-        with socket.create_connection((hostname, 443), timeout=TIMEOUT) as sock:
+        with socket.create_connection((safe_ip, port), timeout=TIMEOUT) as sock:
             with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                 cert = ssock.getpeercert()
 
@@ -64,7 +91,7 @@ def check_ssl(url: str) -> list[Finding]:
             category="ssl",
             passed=True,
             severity="info",
-            detail="SSL certificate is valid and trusted",
+            detail=f"SSL certificate is valid and trusted for {hostname}:{port}",
             fix="No action needed",
             evidence=f"Issued to: {hostname}"
         ))
@@ -124,8 +151,18 @@ def check_ssl(url: str) -> list[Finding]:
             category="ssl",
             passed=False,
             severity="critical",
-            detail=f"Connection timed out while checking SSL on {hostname}",
-            fix="Check if port 443 is open and the site is reachable",
+            detail=f"Connection timed out while checking SSL on {hostname}:{port}",
+            fix="Check if the port is open and the site is reachable",
+            evidence=None
+        ))
+    except socket.gaierror:
+        findings.append(Finding(
+            check_name="SSL Certificate Valid",
+            category="ssl",
+            passed=False,
+            severity="critical",
+            detail=f"DNS resolution failed for {hostname}",
+            fix="Check if the domain name is typed correctly",
             evidence=None
         ))
     except Exception as e:
@@ -140,9 +177,3 @@ def check_ssl(url: str) -> list[Finding]:
         ))
 
     return findings
-
-
-def extract_hostname(url: str) -> str:
-    # strips http:// or https:// and any path
-    url = url.replace("https://", "").replace("http://", "")
-    return url.split("/")[0].split(":")[0]

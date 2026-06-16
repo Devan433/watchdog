@@ -1,6 +1,7 @@
 import requests
 from core.models import Finding
 from config import TIMEOUT, HEADERS
+from core.http_client import safe_request, SafeRequestException
 
 def check_auth(url: str) -> list[Finding]:
     findings = []
@@ -69,10 +70,10 @@ def probe_auth_required(base_url: str, path: str) -> Finding | None:
 
     try:
         # first request: no cookies, no auth headers
-        response = requests.get(
+        response = safe_request(
+            'GET',
             full_url,
             headers=HEADERS,
-            timeout=TIMEOUT,
             allow_redirects=False
         )
     except Exception:
@@ -114,10 +115,10 @@ def probe_api_auth(base_url: str, path: str) -> Finding | None:
 
     try:
         # request with no auth header and no cookies
-        response = requests.get(
+        response = safe_request(
+            'GET',
             full_url,
             headers=HEADERS,
-            timeout=TIMEOUT,
             allow_redirects=False
         )
     except Exception:
@@ -156,10 +157,10 @@ def probe_default_credentials(base_url: str, path: str) -> Finding | None:
     full_url = f"{base_url}{path}"
 
     try:
-        response = requests.get(
+        response = safe_request(
+            'GET',
             full_url,
             headers=HEADERS,
-            timeout=TIMEOUT,
             allow_redirects=False
         )
     except Exception:
@@ -179,11 +180,11 @@ def probe_default_credentials(base_url: str, path: str) -> Finding | None:
 
     for creds in default_credentials:
         try:
-            post_response = requests.post(
+            post_response = safe_request(
+                'POST',
                 full_url,
-                data=creds,
+                json=creds,  # Use JSON since modern APIs expect it
                 headers=HEADERS,
-                timeout=TIMEOUT,
                 allow_redirects=False
             )
             # successful login redirects away from login page

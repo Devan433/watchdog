@@ -1,7 +1,7 @@
 import requests
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from core.models import Finding
 from config import TIMEOUT, HEADERS, SENSITIVE_ENDPOINTS
+from core.http_client import safe_request, SafeRequestException
 
 def check_endpoints(url: str) -> list[Finding]:
     findings = []
@@ -9,16 +9,11 @@ def check_endpoints(url: str) -> list[Finding]:
 
     results = []
 
-    # ── Probe all endpoints concurrently ──────────────────────
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        future_to_endpoint = {
-            executor.submit(probe_endpoint, base_url, endpoint): endpoint
-            for endpoint in SENSITIVE_ENDPOINTS
-        }
-        for future in as_completed(future_to_endpoint):
-            result = future.result()
-            if result:
-                results.append(result)
+    # ── Probe all endpoints sequentially to prevent thread explosion ──
+    for endpoint in SENSITIVE_ENDPOINTS:
+        result = probe_endpoint(base_url, endpoint)
+        if result:
+            results.append(result)
 
     # ── No issues found ───────────────────────────────────────
     if not results:
@@ -41,15 +36,13 @@ def probe_endpoint(base_url: str, endpoint: str) -> Finding | None:
     full_url = f"{base_url}{endpoint}"
 
     try:
-        response = requests.get(
+        response = safe_request(
+            'GET',
             full_url,
             headers=HEADERS,
-            timeout=TIMEOUT,
             allow_redirects=False  # don't follow redirects — a 301 to login is not exposed
         )
-    except requests.exceptions.ConnectionError:
-        return None
-    except requests.exceptions.Timeout:
+    except SafeRequestException:
         return None
     except Exception:
         return None

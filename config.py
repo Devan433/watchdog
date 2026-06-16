@@ -1,7 +1,9 @@
 import os
 
 # ── Request settings ──────────────────────────────────────────
-TIMEOUT = 10  # seconds per request
+TIMEOUT = 10  # read timeout in seconds
+CONNECT_TIMEOUT = 3 # connect timeout in seconds
+MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB max response size
 USER_AGENT = "Watchdog-Security-Scanner/1.0"
 
 HEADERS = {

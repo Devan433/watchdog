@@ -3,36 +3,27 @@ import requests
 from bs4 import BeautifulSoup
 from core.models import Finding
 from config import TIMEOUT, HEADERS, SECRET_PATTERNS
+from core.http_client import safe_request, SafeRequestException
 
 def check_secret_leak(url: str) -> list[Finding]:
     findings = []
 
     # ── Fetch main page ───────────────────────────────────────
     try:
-        response = requests.get(
+        response = safe_request(
+            'GET',
             url,
             headers=HEADERS,
-            timeout=TIMEOUT,
             allow_redirects=True
         )
-    except requests.exceptions.ConnectionError:
+    except SafeRequestException as e:
         return [Finding(
             check_name="Secret Leak Scan",
             category="secret_leak",
             passed=False,
             severity="critical",
-            detail=f"Could not connect to {url}",
+            detail=f"Connection failed: {str(e)}",
             fix="Check the URL is correct and the site is live",
-            evidence=None
-        )]
-    except requests.exceptions.Timeout:
-        return [Finding(
-            check_name="Secret Leak Scan",
-            category="secret_leak",
-            passed=False,
-            severity="critical",
-            detail=f"Connection timed out after {TIMEOUT} seconds",
-            fix="Site is too slow or blocking requests",
             evidence=None
         )]
 
@@ -105,10 +96,10 @@ def extract_js_urls(base_url: str, html: str) -> list[str]:
 
 def fetch_js(url: str) -> str | None:
     try:
-        response = requests.get(
+        response = safe_request(
+            'GET',
             url,
-            headers=HEADERS,
-            timeout=TIMEOUT
+            headers=HEADERS
         )
         if response.status_code == 200:
             return response.text
