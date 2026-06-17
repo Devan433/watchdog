@@ -67,6 +67,7 @@ def probe_endpoint(base_url: str, endpoint: str, baseline_length: int | None = N
 
     # ── 200: definitely exposed ───────────────────────────────
     if status == 200:
+        content_text = response.text.lower()
         # Check if this is just an SPA catch-all 404 page returning 200
         if baseline_length is not None:
             content_len = len(response.content)
@@ -79,15 +80,34 @@ def probe_endpoint(base_url: str, endpoint: str, baseline_length: int | None = N
                 if content_len == 0:
                     return None
 
+        # Heuristic: SPA fallback or error page returning 200
+        is_spa_404 = False
+        if "<html" in content_text and ("not found" in content_text or "404" in content_text or "page not found" in content_text):
+            is_spa_404 = True
+            
+        # Specific content validation
+        if endpoint == "/.git/config" and "[core]" not in response.text:
+            is_spa_404 = True
+
         severity = get_severity(endpoint)
+        confidence = "high"
+        detail = f"{endpoint} returned HTTP 200 — this path is publicly accessible."
+        
+        if is_spa_404:
+            severity = "info"
+            confidence = "low"
+            detail = f"{endpoint} returned HTTP 200, but the content looks like a generic error page or SPA fallback. Likely a false positive."
+
         return Finding(
             check_name=f"Exposed Endpoint: {endpoint}",
             category="endpoints",
             passed=False,
             severity=severity,
-            detail=f"{endpoint} returned HTTP 200 — this path is publicly accessible",
+            detail=detail,
             fix=get_fix(endpoint),
-            evidence=f"GET {full_url} → {status}"
+            evidence=f"GET {full_url} → {status}",
+            confidence=confidence,
+            is_third_party=False
         )
 
     # ── 403: exists but blocked — still worth knowing ─────────
@@ -98,8 +118,10 @@ def probe_endpoint(base_url: str, endpoint: str, baseline_length: int | None = N
             passed=False,
             severity="low",
             detail=f"{endpoint} returned HTTP 403 — path exists but access is blocked. Confirms the route is present.",
-            fix="Consider returning 404 instead of 403 to avoid confirming the path exists",
-            evidence=f"GET {full_url} → {status}"
+            fix="Consider returning 404 instead of 403 to avoid confirming the path exists.",
+            evidence=f"GET {full_url} → {status}",
+            confidence="medium",
+            is_third_party=False
         )
 
     return None

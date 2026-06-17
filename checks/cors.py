@@ -40,7 +40,9 @@ def check_cors(url: str) -> list[Finding]:
             severity="critical",
             detail="Server allows wildcard origin AND credentials. Browsers block this but it signals a deeply misconfigured CORS policy.",
             fix="Never combine Access-Control-Allow-Origin: * with Access-Control-Allow-Credentials: true. Use explicit origins.",
-            evidence=f"ACAO: {acao} | ACAC: {acac}"
+            evidence=f"ACAO: {acao} | ACAC: {acac}",
+            confidence="high",
+            is_third_party=False
         ))
 
     # ── Check 2: Wildcard CORS ────────────────────────────────
@@ -50,9 +52,11 @@ def check_cors(url: str) -> list[Finding]:
             category="cors",
             passed=False,
             severity="medium",
-            detail="Server accepts requests from any origin (Access-Control-Allow-Origin: *). Any website can read responses from your API.",
+            detail="Server accepts requests from any origin (Access-Control-Allow-Origin: *). Any website can read responses from your API. This may be intentional for public APIs.",
             fix="Replace '*' with your specific frontend domain: 'Access-Control-Allow-Origin: https://yourdomain.com'",
-            evidence=f"Access-Control-Allow-Origin: {acao}"
+            evidence=f"Access-Control-Allow-Origin: {acao}",
+            confidence="low",
+            is_third_party=False
         ))
 
     # ── Check 3: Reflecting evil origin ──────────────────────
@@ -64,7 +68,9 @@ def check_cors(url: str) -> list[Finding]:
             severity="high",
             detail="Server reflects any Origin header back without validation. Any website can make credentialed requests to your API.",
             fix="Maintain an explicit allowlist of trusted origins and only reflect those. Never reflect arbitrary Origin headers.",
-            evidence=f"Access-Control-Allow-Origin: {acao}"
+            evidence=f"Access-Control-Allow-Origin: {acao}",
+            confidence="medium",
+            is_third_party=False
         ))
 
     # ── Check 4: No CORS header (fine for non-APIs) ───────────
@@ -76,7 +82,9 @@ def check_cors(url: str) -> list[Finding]:
             severity="info",
             detail="No CORS headers found. This is fine if this is not an API.",
             fix="No action needed unless this is an API intended for cross-origin access.",
-            evidence=None
+            evidence=None,
+            confidence="high",
+            is_third_party=False
         ))
 
     # ── Check 5: Specific origin set correctly ────────────────
@@ -88,7 +96,9 @@ def check_cors(url: str) -> list[Finding]:
             severity="info",
             detail=f"CORS is restricted to a specific origin: {acao}",
             fix="No action needed",
-            evidence=f"Access-Control-Allow-Origin: {acao}"
+            evidence=f"Access-Control-Allow-Origin: {acao}",
+            confidence="high",
+            is_third_party=False
         ))
 
     return findings

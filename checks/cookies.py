@@ -61,10 +61,14 @@ def check_single_cookie(cookie) -> list[Finding]:
     )
 
     if not cookie.has_nonstandard_attr("HttpOnly") and not cookie._rest.get("HttpOnly"):
-        severity = "high" if is_session_cookie else "low"
-        detail = f"Cookie '{name}' is missing HttpOnly flag. JavaScript can read it."
         if is_session_cookie:
-            detail += " Since this looks like a session/auth cookie, XSS attacks could steal it."
+            severity = "high"
+            confidence = "high"
+            detail = f"Cookie '{name}' is missing HttpOnly flag. Since this looks like a session/auth cookie, XSS attacks could steal it."
+        else:
+            severity = "info"
+            confidence = "low"
+            detail = f"Cookie '{name}' is missing HttpOnly flag. JavaScript can read it, but it does not appear to be a session cookie (likely tracking/analytics)."
             
         findings.append(Finding(
             check_name=f"Cookie: {name} — HttpOnly",
@@ -73,7 +77,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             severity=severity,
             detail=detail,
             fix=f"If '{name}' is a session cookie, set HttpOnly. If it is an analytics/tracking cookie, it is safe to ignore.",
-            evidence=f"Cookie: {name}"
+            evidence=f"Cookie: {name}",
+            confidence=confidence,
+            is_third_party=False
         ))
     else:
         findings.append(Finding(
@@ -83,7 +89,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             severity="info",
             detail=f"Cookie '{name}' has HttpOnly flag set",
             fix="No action needed",
-            evidence=f"Cookie: {name}"
+            evidence=f"Cookie: {name}",
+            confidence="high",
+            is_third_party=False
         ))
 
     # ── Secure ────────────────────────────────────────────────
@@ -95,7 +103,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             severity="medium",
             detail=f"Cookie '{name}' is missing Secure flag. Cookie can be transmitted over HTTP.",
             fix=f"Set Secure flag on '{name}'.",
-            evidence=f"Cookie: {name}"
+            evidence=f"Cookie: {name}",
+            confidence="high",
+            is_third_party=False
         ))
     else:
         findings.append(Finding(
@@ -105,7 +115,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             severity="info",
             detail=f"Cookie '{name}' has Secure flag set",
             fix="No action needed",
-            evidence=f"Cookie: {name}"
+            evidence=f"Cookie: {name}",
+            confidence="high",
+            is_third_party=False
         ))
 
     # ── SameSite ──────────────────────────────────────────────
@@ -119,7 +131,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             severity="low",
             detail=f"Cookie '{name}' is missing SameSite attribute.",
             fix=f"Set SameSite on '{name}' if it is a sensitive cookie.",
-            evidence=f"Cookie: {name}"
+            evidence=f"Cookie: {name}",
+            confidence="high",
+            is_third_party=False
         ))
     else:
         findings.append(Finding(
@@ -129,7 +143,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             severity="info",
             detail=f"Cookie '{name}' has SameSite attribute set",
             fix="No action needed",
-            evidence=f"Cookie: {name}"
+            evidence=f"Cookie: {name}",
+            confidence="high",
+            is_third_party=False
         ))
 
     return findings

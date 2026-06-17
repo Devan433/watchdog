@@ -67,16 +67,32 @@ def check_headers(url: str) -> list[Finding]:
         },
     }
 
+    csp_header = response_headers.get("content-security-policy", "").lower()
+
     for header_key, meta in header_checks.items():
         if header_key not in response_headers:
+            severity = meta["severity"]
+            confidence = "high"
+            passed = False
+            detail = meta["detail"]
+            
+            # Contextual check: Missing X-Frame-Options is mitigated by CSP frame-ancestors
+            if header_key == "x-frame-options" and "frame-ancestors" in csp_header:
+                passed = True
+                severity = "info"
+                detail = "X-Frame-Options is missing, but protection is provided by CSP frame-ancestors."
+                confidence = "high"
+                
             findings.append(Finding(
                 check_name=meta["check_name"],
                 category="headers",
-                passed=False,
-                severity=meta["severity"],
-                detail=meta["detail"],
+                passed=passed,
+                severity=severity,
+                detail=detail,
                 fix=meta["fix"],
-                evidence=None
+                evidence=None,
+                confidence=confidence,
+                is_third_party=False
             ))
         else:
             findings.append(Finding(
@@ -86,7 +102,9 @@ def check_headers(url: str) -> list[Finding]:
                 severity="info",
                 detail=f"{meta['check_name']} is present",
                 fix="No action needed",
-                evidence=response_headers[header_key]
+                evidence=response_headers[header_key],
+                confidence="high",
+                is_third_party=False
             ))
 
     return findings

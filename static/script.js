@@ -9,35 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const scanStepsContainer = document.querySelector('.scan-steps');
     
-    // Theme logic
-    const themeToggle = document.getElementById('theme-toggle');
-    const sunIcon = document.querySelector('.sun-icon');
-    const moonIcon = document.querySelector('.moon-icon');
-
-    function updateThemeIcons() {
-        if (document.documentElement.getAttribute('data-theme') === 'light') {
-            sunIcon.classList.add('hidden');
-            moonIcon.classList.remove('hidden');
-        } else {
-            moonIcon.classList.add('hidden');
-            sunIcon.classList.remove('hidden');
-        }
-    }
-
-    if (themeToggle) {
-        updateThemeIcons();
-        themeToggle.addEventListener('click', () => {
-            if (document.documentElement.getAttribute('data-theme') === 'light') {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-                localStorage.setItem('theme', 'light');
-            }
-            updateThemeIcons();
-        });
-    }
-
     const steps = [
         "Resolving domain and checking HTTPS",
         "Analyzing security headers",

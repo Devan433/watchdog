@@ -5,6 +5,16 @@ from core.models import Finding
 from config import TIMEOUT, HEADERS, SECRET_PATTERNS
 from core.http_client import safe_request, SafeRequestException
 
+THIRD_PARTY_DOMAINS = [
+    "googleapis.com", "gstatic.com", "jsdelivr.net", "unpkg.com", 
+    "cdnjs.cloudflare.com", "googletagmanager.com", "google-analytics.com",
+    "facebook.net", "stripe.com", "paypal.com", "cdn."
+]
+
+def is_third_party(url: str) -> bool:
+    if url == "main page": return False
+    return any(domain in url.lower() for domain in THIRD_PARTY_DOMAINS)
+
 def check_secret_leak(url: str) -> list[Finding]:
     findings = []
 
@@ -43,7 +53,11 @@ def check_secret_leak(url: str) -> list[Finding]:
         for secret_type, pattern in SECRET_PATTERNS.items():
             matches = re.findall(pattern, content)
             if matches:
-                leaked.append((secret_type, source_name, matches[0]))
+                for match in set(matches):
+                    # Basic validation: ignore obvious dummy strings
+                    if "example" in match.lower() or "123456789" in match or "your_api_key" in match.lower():
+                        continue
+                    leaked.append((secret_type, source_name, match))
 
     # ── Build findings ────────────────────────────────────────
     if not leaked:
@@ -60,14 +74,32 @@ def check_secret_leak(url: str) -> list[Finding]:
 
     for secret_type, source_name, match in leaked:
         redacted = redact(match)
+        third_party = is_third_party(source_name)
+        
+        severity = "critical"
+        confidence = "high"
+        detail = f"Potential {secret_type} found in {source_name}"
+        fix = get_fix(secret_type)
+        
+        if third_party:
+            severity = "info"
+            confidence = "low"
+            detail += ". Note: This was found in a third-party script and is likely a public identifier or dummy key."
+            fix = "Review to ensure this is an intentional public key from a third party."
+        elif secret_type in ["stripe_public", "google_api_key"]:
+            severity = "medium"
+            confidence = "high"
+
         findings.append(Finding(
             check_name=f"Exposed Secret: {secret_type}",
             category="secret_leak",
             passed=False,
-            severity="critical",
-            detail=f"Potential {secret_type} found in {source_name}",
-            fix=get_fix(secret_type),
-            evidence=redacted
+            severity=severity,
+            detail=detail,
+            fix=fix,
+            evidence=redacted,
+            confidence=confidence,
+            is_third_party=third_party
         ))
 
     return findings

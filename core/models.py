@@ -10,6 +10,8 @@ class Finding:
     detail: str            # what was found e.g. "CSP header is missing"
     fix: str               # copy-paste fix prompt for Cursor/Claude
     evidence: Optional[str] = None  # actual value found e.g. the raw header value
+    confidence: str = "high"        # "high", "medium", "low"
+    is_third_party: bool = False    # True if resource belongs to external CDN/provider
 
 @dataclass
 class ScanResult:
