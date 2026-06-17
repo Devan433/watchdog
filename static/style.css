@@ -1,38 +1,67 @@
 /* ==========================================================================
-   CSS Variables & Theme
+   CSS Variables & Theme (Modern Dark)
    ========================================================================== */
    :root {
     /* Colors */
-    --bg-color: #FAFAFA;
-    --card-bg: #FFFFFF;
-    --border-color: #EAEAEA;
+    --bg-color: #000000;
+    --card-bg: #0A0A0A;
+    --border-color: #27272A;
     
     /* Typography Colors */
-    --text-primary: #1A1A1A;
-    --text-secondary: #666666;
-    --text-tertiary: #888888;
+    --text-primary: #FAFAFA;
+    --text-secondary: #A1A1AA;
+    --text-tertiary: #52525B;
     
     /* Severity Colors */
-    --color-critical: #E53E3E; /* Red */
-    --color-high: #DD6B20; /* Orange */
-    --color-medium: #D69E2E; /* Amber */
-    --color-low: #3182CE; /* Blue */
-    --color-passed: #38A169; /* Green */
-    --color-neutral: #718096; /* Gray */
+    --color-critical: #F87171;
+    --color-high: #FB923C;
+    --color-medium: #FBBF24;
+    --color-low: #60A5FA;
+    --color-passed: #4ADE80;
+    --color-neutral: #9CA3AF;
     
-    /* Severity Backgrounds (10% opacity equivalent for badges) */
-    --bg-critical: #FED7D7;
-    --bg-high: #FEEBC8;
-    --bg-medium: #FEFCBF;
-    --bg-low: #BEE3F8;
-    --bg-passed: #C6F6D5;
-    --bg-neutral: #E2E8F0;
+    /* Severity Backgrounds */
+    --bg-critical: rgba(248, 113, 113, 0.15);
+    --bg-high: rgba(251, 146, 60, 0.15);
+    --bg-medium: rgba(250, 191, 36, 0.15);
+    --bg-low: rgba(96, 165, 250, 0.15);
+    --bg-passed: rgba(74, 222, 128, 0.15);
+    --bg-neutral: rgba(156, 163, 175, 0.15);
+
+    /* Accents */
+    --accent-bg: #FFFFFF;
+    --accent-text: #000000;
+    --accent-hover: #E4E4E7;
 
     /* Spacing & Layout */
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
     --content-width: 1100px;
+}
+
+[data-theme="light"] {
+    --bg-color: #FAFAFA;
+    --card-bg: #FFFFFF;
+    --border-color: #EAEAEA;
+    --text-primary: #1A1A1A;
+    --text-secondary: #666666;
+    --text-tertiary: #888888;
+    --color-critical: #E53E3E;
+    --color-high: #DD6B20;
+    --color-medium: #D69E2E;
+    --color-low: #3182CE;
+    --color-passed: #38A169;
+    --color-neutral: #718096;
+    --bg-critical: #FED7D7;
+    --bg-high: #FEEBC8;
+    --bg-medium: #FEFCBF;
+    --bg-low: #BEE3F8;
+    --bg-passed: #C6F6D5;
+    --bg-neutral: #E2E8F0;
+    --accent-bg: #1A1A1A;
+    --accent-text: #FFFFFF;
+    --accent-hover: #000000;
 }
 
 /* ==========================================================================
@@ -51,6 +80,10 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+body, .main-card, .stat-card, .scanner-card, .finding-card, .finding-evidence, .route-chip, .top-nav, .url-input, .primary-btn, .home-btn, .theme-btn {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 a {
@@ -176,6 +209,22 @@ ul, ol {
     opacity: 0.7;
 }
 
+.theme-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+}
+
+.theme-btn:hover {
+    background-color: var(--border-color);
+}
+
 /* ==========================================================================
    Main Layout
    ========================================================================== */
@@ -244,9 +293,9 @@ ul, ol {
     padding: 0.875rem 1.5rem;
     font-family: inherit;
     font-size: 1rem;
-    font-weight: 500;
-    color: #fff;
-    background-color: var(--text-primary);
+    font-weight: 600;
+    color: var(--accent-text);
+    background-color: var(--accent-bg);
     border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
@@ -254,7 +303,7 @@ ul, ol {
 }
 
 .primary-btn:hover {
-    background-color: #000;
+    background-color: var(--accent-hover);
 }
 
 .primary-btn:disabled {
@@ -594,7 +643,7 @@ ul, ol {
 .route-chip.risky {
     border-color: var(--bg-high);
     color: var(--color-high);
-    background-color: #FFFFAF; /* Very subtle warm tint */
+    background-color: var(--bg-high);
 }
 
 /* ==========================================================================
