@@ -1,19 +1,19 @@
-# Watchdog — Pre-Deployment Security Linter
+# WatchDawg — Pre-Deployment Security Linter
 
-**Watchdog** is a developer-focused security linting tool for web applications. Enter a URL, run a scan, and get an actionable report covering headers, TLS, CORS, cookies, exposed files, leaked secrets, and basic authentication issues — with a score, grade, and fix instructions.
+**WatchDawg** is a developer-focused security linting tool for web applications. Enter a URL, run a scan, and get an actionable report covering headers, TLS, CORS, cookies, exposed files, leaked secrets, and basic authentication issues — with a score, grade, and fix instructions.
 
 It is designed to answer one question before you ship:
 
 > *"Are there obvious security mistakes on this site that I can fix in minutes?"*
 
-Watchdog is **not** a penetration testing framework. It is a fast, lightweight linter — closer to ESLint for security than to OWASP ZAP.
+WatchDawg is **not** a penetration testing framework. It is a fast, lightweight linter — closer to ESLint for security than to OWASP ZAP.
 
 ---
 
 ## Table of Contents
 
-1. [What Watchdog Does](#what-watchdog-does)
-2. [What Watchdog Does NOT Do](#what-watchdog-does-not-do)
+1. [What WatchDawg Does](#what-WatchDawg-does)
+2. [What WatchDawg Does NOT Do](#what-WatchDawg-does-not-do)
 3. [Key Features](#key-features)
 4. [Technology Stack](#technology-stack)
 5. [Project Structure](#project-structure)
@@ -27,20 +27,20 @@ Watchdog is **not** a penetration testing framework. It is a fast, lightweight l
 13. [CLI Usage (CI/CD)](#cli-usage-cicd)
 14. [Configuration Reference](#configuration-reference)
 15. [Installation](#installation)
-16. [Running Watchdog](#running-watchdog)
+16. [Running WatchDawg](#running-WatchDawg)
 17. [Testing](#testing)
 18. [Deployment](#deployment)
-19. [Scanner Security (Protecting Watchdog Itself)](#scanner-security-protecting-watchdog-itself)
+19. [Scanner Security (Protecting WatchDawg Itself)](#scanner-security-protecting-WatchDawg-itself)
 20. [Limitations & False Positives](#limitations--false-positives)
 21. [Legal & Ethical Use](#legal--ethical-use)
 22. [Troubleshooting](#troubleshooting)
-23. [Extending Watchdog](#extending-watchdog)
+23. [Extending WatchDawg](#extending-WatchDawg)
 
 ---
 
-## What Watchdog Does
+## What WatchDawg Does
 
-Watchdog performs **passive and light active checks** against a public URL:
+WatchDawg performs **passive and light active checks** against a public URL:
 
 | Category        | What it checks |
 |-----------------|----------------|
@@ -63,7 +63,7 @@ Each issue includes:
 
 ---
 
-## What Watchdog Does NOT Do
+## What WatchDawg Does NOT Do
 
 Be clear with users and clients about scope:
 
@@ -74,7 +74,7 @@ Be clear with users and clients about scope:
 - ❌ Infrastructure scanning (open ports, firewall rules)
 - ❌ Guaranteed zero false positives
 
-Watchdog finds **common pre-launch mistakes**. A clean report does not mean the app is fully secure.
+WatchDawg finds **common pre-launch mistakes**. A clean report does not mean the app is fully secure.
 
 ---
 
@@ -109,7 +109,7 @@ Watchdog finds **common pre-launch mistakes**. A clean report does not mean the 
 ## Project Structure
 
 ```
-watchdog/
+WatchDawg/
 ├── app.py                  # Flask app, routes, CLI entry point
 ├── config.py               # Timeouts, patterns, scoring weights, probe lists
 ├── requirements.txt        # Python dependencies
@@ -569,7 +569,7 @@ Open `http://127.0.0.1:5000` after starting the server.
 
 ## CLI Usage (CI/CD)
 
-Watchdog includes a CLI for terminal use and CI pipelines.
+WatchDawg includes a CLI for terminal use and CI pipelines.
 
 ### Basic scan
 
@@ -630,7 +630,7 @@ All configuration lives in `config.py`.
 | `TIMEOUT` | 10 | Read timeout (seconds) |
 | `CONNECT_TIMEOUT` | 3 | Connect timeout (seconds) |
 | `MAX_CONTENT_LENGTH` | 5 MB | Max response body size |
-| `USER_AGENT` | `Watchdog-Security-Scanner/1.0` | Outbound request User-Agent |
+| `USER_AGENT` | `WatchDawg-Security-Scanner/1.0` | Outbound request User-Agent |
 
 ### Per-check timeouts (`CHECK_TIMEOUTS`)
 
@@ -667,8 +667,8 @@ All configuration lives in `config.py`.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Devan433/watchdog.git
-cd watchdog
+git clone https://github.com/Devan433/WatchDawg.git
+cd WatchDawg
 
 # 2. (Recommended) Create a virtual environment
 python -m venv venv
@@ -701,7 +701,7 @@ responses       # for HTTP mocking in tests
 
 ---
 
-## Running Watchdog
+## Running WatchDawg
 
 ### Web server (production-style)
 
@@ -783,7 +783,7 @@ Without Redis, each instance maintains its own in-memory rate limit counter.
 
 ### Reverse proxy
 
-Watchdog uses `ProxyFix` middleware and trusts one level of `X-Forwarded-For`, `X-Proto`, `X-Host`, and `X-Prefix` headers — compatible with Render, Nginx, and similar proxies.
+WatchDawg uses `ProxyFix` middleware and trusts one level of `X-Forwarded-For`, `X-Proto`, `X-Host`, and `X-Prefix` headers — compatible with Render, Nginx, and similar proxies.
 
 ### Recommended production checklist
 
@@ -795,9 +795,9 @@ Watchdog uses `ProxyFix` middleware and trusts one level of `X-Forwarded-For`, `
 
 ---
 
-## Scanner Security (Protecting Watchdog Itself)
+## Scanner Security (Protecting WatchDawg Itself)
 
-Because Watchdog fetches user-supplied URLs, it implements several safeguards:
+Because WatchDawg fetches user-supplied URLs, it implements several safeguards:
 
 ### SSRF protection (`core/http_client.py`)
 
@@ -815,9 +815,9 @@ Because Watchdog fetches user-supplied URLs, it implements several safeguards:
 - Max 10 concurrent scans (semaphore)
 - Rate limiting on `/scan` endpoint
 
-### Watchdog's own security headers
+### WatchDawg's own security headers
 
-Every response from the Watchdog app includes:
+Every response from the WatchDawg app includes:
 ```
 Content-Security-Policy
 Strict-Transport-Security
@@ -846,13 +846,13 @@ Finding `detail`, `fix`, and `check_name` fields are HTML-escaped before renderi
 | Auth check | Only unauthenticated GET/POST; no session support |
 | 403 responses | Reported as info only — no score impact |
 
-**Recommendation:** Treat Watchdog as a **first pass**. Investigate critical/high findings immediately. Review low-confidence findings manually before acting.
+**Recommendation:** Treat WatchDawg as a **first pass**. Investigate critical/high findings immediately. Review low-confidence findings manually before acting.
 
 ---
 
 ## Legal & Ethical Use
 
-Watchdog sends HTTP requests to target URLs, including:
+WatchDawg sends HTTP requests to target URLs, including:
 - GET requests to common admin and API paths
 - POST requests with default credentials to login pages
 
@@ -863,7 +863,7 @@ Unauthorized scanning may violate:
 - Your hosting provider's terms of service
 - The target site's terms of use
 
-If deploying Watchdog as a public service, display a clear acceptable use policy.
+If deploying WatchDawg as a public service, display a clear acceptable use policy.
 
 ---
 
@@ -916,7 +916,7 @@ python app.py scan http://localhost:3000 --allow-localhost
 
 ---
 
-## Extending Watchdog
+## Extending WatchDawg
 
 ### Add a new check
 
@@ -981,12 +981,12 @@ python -m pytest tests/ -q
 
 ## Summary
 
-Watchdog is a **pre-deployment security linter** that helps developers catch obvious security misconfigurations before they reach production. It combines seven parallel security checks, a weighted scoring system, actionable fix guidance, and both a web dashboard and CLI interface — hardened against SSRF abuse and designed to minimize false positives on modern web apps.
+WatchDawg is a **pre-deployment security linter** that helps developers catch obvious security misconfigurations before they reach production. It combines seven parallel security checks, a weighted scoring system, actionable fix guidance, and both a web dashboard and CLI interface — hardened against SSRF abuse and designed to minimize false positives on modern web apps.
 
 Use it early, use it often, and treat a passing grade as a strong starting point — not a final security audit.
 
 ---
 
-**Repository:** https://github.com/Devan433/watchdog  
+**Repository:** https://github.com/Devan433/WatchDawg  
 **Python:** 3.10+  
 **License:** Add your license here
