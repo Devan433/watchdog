@@ -1,16 +1,16 @@
 <div align="center">
-    <img src="static/logo.png" alt="WatchDawg Logo" width="120" />
-    <h1>WatchDawg</h1>
-    <p><strong>A Highly Concurrent, Pre-Deployment Security Linter for Web Applications</strong></p>
+  <img src="static/logo.png" alt="WatchDawg Logo" width="120" />
+  <h1>WatchDawg</h1>
+  <p><strong>A Highly Concurrent, Pre-Deployment Security Linter for Web Applications</strong></p>
 </div>
 
 <p align="center">
-    WatchDawg is an essential, high-speed security linting tool built for modern web applications. Enter a target URL, launch an automated scan, and receive a comprehensive, actionable report assessing your application's security posture. By identifying misconfigurations across headers, TLS, CORS, cookies, secret leaks, and exposed endpoints, WatchDawg empowers developers to secure their applications seamlessly before production deployment.
+  WatchDawg is an essential, high-speed security linting tool built for modern web applications. Enter a target URL, launch an automated scan, and receive a comprehensive, actionable report assessing your application's security posture. By identifying misconfigurations across headers, TLS, CORS, cookies, secret leaks, and exposed endpoints, WatchDawg empowers developers to secure their applications seamlessly before production deployment.
 </p>
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 1. [Key Features](#-key-features)
 2. [Technology Stack](#-technology-stack)
@@ -33,7 +33,7 @@
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **Blazing Fast Concurrency**: Executes 7 distinct security check modules entirely in parallel utilizing Python's `ThreadPoolExecutor`.
 - **SSRF-Hardened Engine**: Safely fetches URLs with robust DNS pinning, strict restriction against private/link-local IPs (e.g., `169.254.169.254`), and strict response size caps.
@@ -45,100 +45,100 @@
 
 ---
 
-## 🛠 Technology Stack
+## Technology Stack
 
 WatchDawg leverages a lean and powerful stack to deliver rapid security linting.
 
-| Layer                | Technology |
+| Layer        | Technology |
 |----------------------|------------|
-| **Core Framework**   | Python 3.10+, Flask |
-| **Networking**       | `requests` wrapped in custom SSRF-safe client |
-| **Parsing Engine**   | `beautifulsoup4` |
+| **Core Framework**  | Python 3.10+, Flask |
+| **Networking**    | `requests` wrapped in custom SSRF-safe client |
+| **Parsing Engine**  | `beautifulsoup4` |
 | **Production Server**| `waitress` (Multi-threaded WSGI) |
-| **Rate Limiting**    | `flask-limiter` (In-memory or Redis-backed) |
-| **Frontend UI**      | Vanilla HTML, CSS, JavaScript |
-| **Testing Suite**    | `pytest`, `responses` |
+| **Rate Limiting**  | `flask-limiter` (In-memory or Redis-backed) |
+| **Frontend UI**   | Vanilla HTML, CSS, JavaScript |
+| **Testing Suite**  | `pytest`, `responses` |
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 WatchDawg/
-├── app.py                  # Flask application, routing, and CLI entry point
-├── config.py               # Constants: Timeouts, patterns, weights, and endpoints
-├── requirements.txt        # Python package dependencies
+├── app.py         # Flask application, routing, and CLI entry point
+├── config.py        # Constants: Timeouts, patterns, weights, and endpoints
+├── requirements.txt    # Python package dependencies
 │
 ├── core/
-│   ├── orchestrator.py     # Thread pool management and final scan compilation
-│   ├── http_client.py      # SSRF-hardened request layer + per-scan page cache
-│   ├── models.py           # Dataclasses: Finding, ScanResult
-│   ├── scorer.py           # Calculates scores (0–100) and letter grades
-│   └── formatter.py        # Marshals logic output to RESTful JSON
+│  ├── orchestrator.py   # Thread pool management and final scan compilation
+│  ├── http_client.py   # SSRF-hardened request layer + per-scan page cache
+│  ├── models.py      # Dataclasses: Finding, ScanResult
+│  ├── scorer.py      # Calculates scores (0–100) and letter grades
+│  └── formatter.py    # Marshals logic output to RESTful JSON
 │
 ├── checks/
-│   ├── headers.py          # Validates HTTP response headers and CSP
-│   ├── ssl_tls.py          # Validates TLS configurations and OpenSSL certs
-│   ├── cors.py             # Validates Cross-Origin Resource Sharing
-│   ├── cookies.py          # Validates Set-Cookie security flags
-│   ├── endpoints.py        # Probes sensitive file exposure (.env, .git)
-│   ├── secret_leak.py      # Extracts HTML/JS bundles and runs regex pattern matching
-│   └── auth_checks.py      # Probes admin routes, API auth, and default credentials
+│  ├── headers.py     # Validates HTTP response headers and CSP
+│  ├── ssl_tls.py     # Validates TLS configurations and OpenSSL certs
+│  ├── cors.py       # Validates Cross-Origin Resource Sharing
+│  ├── cookies.py     # Validates Set-Cookie security flags
+│  ├── endpoints.py    # Probes sensitive file exposure (.env, .git)
+│  ├── secret_leak.py   # Extracts HTML/JS bundles and runs regex pattern matching
+│  └── auth_checks.py   # Probes admin routes, API auth, and default credentials
 │
 ├── templates/
-│   └── index.html          # Web dashboard layout
+│  └── index.html     # Web dashboard layout
 │
 ├── static/
-│   ├── style.css           # Dashboard styling
-│   └── script.js           # Dashboard DOM manipulation and scanning logic
+│  ├── style.css      # Dashboard styling
+│  └── script.js      # Dashboard DOM manipulation and scanning logic
 │
-└── tests/                  # 330+ Unit and integration tests
-    ├── conftest.py
-    ├── test_scorer.py
-    ├── test_headers.py
-    ├── test_cors.py
-    ├── test_cookies.py
-    ├── test_endpoints.py
-    ├── test_secret_leak.py
-    ├── test_http_client.py
-    └── test_massive.py
+└── tests/         # 330+ Unit and integration tests
+  ├── conftest.py
+  ├── test_scorer.py
+  ├── test_headers.py
+  ├── test_cors.py
+  ├── test_cookies.py
+  ├── test_endpoints.py
+  ├── test_secret_leak.py
+  ├── test_http_client.py
+  └── test_massive.py
 ```
 
 ---
 
-## 🏗 System Architecture
+## System Architecture
 
 WatchDawg is engineered for performance, isolating each security check into concurrent workers while maintaining a centralized, SSRF-safe HTTP cache layer.
 
 ```mermaid
 graph TD
-    A([Client / Web UI]) -->|POST /scan| B[Flask App & Rate Limiter]
-    B --> C{Orchestrator}
-    
-    subgraph Parallel Check Modules
-        C -->|Thread 1| D[Headers Analysis]
-        C -->|Thread 2| E[SSL/TLS Validation]
-        C -->|Thread 3| F[CORS Policy Probing]
-        C -->|Thread 4| G[Cookie Security]
-        C -->|Thread 5| H[Sensitive Endpoints]
-        C -->|Thread 6| I[Secret Leak Regex]
-        C -->|Thread 7| J[Auth & Default Creds]
-    end
-    
-    subgraph HTTP & Security Layer
-        D & E & F & G & H & I & J --> K[Safe HTTP Client]
-        K --> L((Per-Scan Page Cache))
-        K --> M[DNS Pinning & SSRF Blocking]
-    end
-    
-    K --> N[Target URL]
-    
-    D & E & F & G & H & I & J --> O[Finding Aggregator]
-    O --> P[Scoring Engine]
-    P --> Q([JSON Response / Dashboard])
+  A([Client / Web UI]) -->|POST /scan| B[Flask App & Rate Limiter]
+  B --> C{Orchestrator}
+  
+  subgraph Parallel Check Modules
+    C -->|Thread 1| D[Headers Analysis]
+    C -->|Thread 2| E[SSL/TLS Validation]
+    C -->|Thread 3| F[CORS Policy Probing]
+    C -->|Thread 4| G[Cookie Security]
+    C -->|Thread 5| H[Sensitive Endpoints]
+    C -->|Thread 6| I[Secret Leak Regex]
+    C -->|Thread 7| J[Auth & Default Creds]
+  end
+  
+  subgraph HTTP & Security Layer
+    D & E & F & G & H & I & J --> K[Safe HTTP Client]
+    K --> L((Per-Scan Page Cache))
+    K --> M[DNS Pinning & SSRF Blocking]
+  end
+  
+  K --> N[Target URL]
+  
+  D & E & F & G & H & I & J --> O[Finding Aggregator]
+  O --> P[Scoring Engine]
+  P --> Q([JSON Response / Dashboard])
 ```
 
-### ⚙️ How a Scan Works Step-by-Step
+### How a Scan Works Step-by-Step
 
 1. **Input Validation (`app.py`)**: The engine ensures URLs meet domain pattern constraints.
 2. **Cache Initialization (`orchestrator.py`)**: A fresh session is created to isolate cache dependencies per-scan.
@@ -149,7 +149,7 @@ graph TD
 
 ---
 
-## 🛡 In-Depth Security Modules
+## In-Depth Security Modules
 
 ### 1. Security Headers (`checks/headers.py`)
 Analyzes the main page for critical security headers.
@@ -184,13 +184,13 @@ Safeguards against exposed credentials in frontend source code.
 ### 7. Authentication Hardening (`checks/auth_checks.py`)
 Verifies the integrity of application authentication boundaries.
 - **Checks:** 
-  - **Admin Routes**: Scans routes like `/admin/dashboard` for unauthenticated HTTP 200 success states.
-  - **JSON APIs**: Flags endpoints like `/api/users` that return valid JSON blobs without requiring Authorization headers.
-  - **Default Credentials**: Attempts automated logins with common weak credentials (e.g., `admin:admin`) across known login endpoints, monitoring for authentication tokens or successful redirects.
+ - **Admin Routes**: Scans routes like `/admin/dashboard` for unauthenticated HTTP 200 success states.
+ - **JSON APIs**: Flags endpoints like `/api/users` that return valid JSON blobs without requiring Authorization headers.
+ - **Default Credentials**: Attempts automated logins with common weak credentials (e.g., `admin:admin`) across known login endpoints, monitoring for authentication tokens or successful redirects.
 
 ---
 
-## 📊 Scoring & Grading System
+## Scoring & Grading System
 
 WatchDawg quantifies security risks with a deterministic grading algorithm that translates complex findings into a developer-friendly letter grade.
 
@@ -219,7 +219,7 @@ To prevent minor issues from unjustly skewing the final grade (such as missing o
 
 ---
 
-## 🧱 Data Models
+## Data Models
 
 ### `Finding` Object
 
@@ -228,55 +228,55 @@ The core data class returned by every security module.
 ```python
 @dataclass
 class Finding:
-    check_name: str       # E.g., "Content-Security-Policy"
-    category: str         # Module category ("headers", "ssl", "cors")
-    passed: bool          # True if the security check succeeded
-    severity: str         # "critical", "high", "medium", "low", "info"
-    detail: str           # Human-readable explanation of the issue
-    fix: str              # Developer-facing remediation instructions
-    evidence: str | None  # Redacted proof (headers, status code)
-    confidence: str       # "high", "medium", "low"
-    is_third_party: bool  # True if the finding came from a third-party asset
+  check_name: str    # E.g., "Content-Security-Policy"
+  category: str     # Module category ("headers", "ssl", "cors")
+  passed: bool     # True if the security check succeeded
+  severity: str     # "critical", "high", "medium", "low", "info"
+  detail: str      # Human-readable explanation of the issue
+  fix: str       # Developer-facing remediation instructions
+  evidence: str | None # Redacted proof (headers, status code)
+  confidence: str    # "high", "medium", "low"
+  is_third_party: bool # True if the finding came from a third-party asset
 ```
 
 ### JSON Response Signature
 
 ```json
 {
-  "url": "https://example.com",
-  "score": 74,
-  "grade": "C",
-  "summary": "2 medium, 4 low issues found — Grade C (74/100)",
-  "breakdown": {
-    "critical": 0,
-    "high": 0,
-    "medium": 2,
-    "low": 4,
-    "info": 0,
-    "passed": 7
-  },
-  "categories": {
-    "headers": [
-      {
-        "check_name": "Content-Security-Policy",
-        "passed": false,
-        "severity": "medium",
-        "detail": "CSP header is missing.",
-        "fix": "Implement a Content Security Policy...",
-        "evidence": null,
-        "confidence": "high",
-        "is_third_party": false,
-        "fix_prompt": "Fix this security issue: CSP header is missing..."
-      }
-    ]
-  },
-  "error": null
+ "url": "https://example.com",
+ "score": 74,
+ "grade": "C",
+ "summary": "2 medium, 4 low issues found — Grade C (74/100)",
+ "breakdown": {
+  "critical": 0,
+  "high": 0,
+  "medium": 2,
+  "low": 4,
+  "info": 0,
+  "passed": 7
+ },
+ "categories": {
+  "headers": [
+   {
+    "check_name": "Content-Security-Policy",
+    "passed": false,
+    "severity": "medium",
+    "detail": "CSP header is missing.",
+    "fix": "Implement a Content Security Policy...",
+    "evidence": null,
+    "confidence": "high",
+    "is_third_party": false,
+    "fix_prompt": "Fix this security issue: CSP header is missing..."
+   }
+  ]
+ },
+ "error": null
 }
 ```
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 WatchDawg provides a lightweight REST API.
 
@@ -292,7 +292,7 @@ POST /scan
 Content-Type: application/json
 
 {
-  "url": "https://example.com"
+ "url": "https://example.com"
 }
 ```
 
@@ -309,7 +309,7 @@ Content-Type: application/json
 
 ---
 
-## 🖥 Web Dashboard & CLI
+## Web Dashboard & CLI
 
 WatchDawg offers two robust interfaces.
 
@@ -338,7 +338,7 @@ python app.py scan http://localhost:3000 --allow-localhost
 
 ---
 
-## ⚙️ Configuration Reference
+## Configuration Reference
 
 Operational flags and global behaviors are sourced directly from `config.py`.
 
@@ -357,7 +357,7 @@ Operational flags and global behaviors are sourced directly from `config.py`.
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 Ensure you have **Python 3.10+** installed.
 
@@ -370,8 +370,8 @@ cd watchdog
 python -m venv venv
 
 # Activate Environment
-source venv/bin/activate      # macOS / Linux
-venv\Scripts\activate         # Windows
+source venv/bin/activate   # macOS / Linux
+venv\Scripts\activate     # Windows
 
 # 3. Install Required Dependencies
 pip install -r requirements.txt
@@ -383,7 +383,7 @@ python app.py
 
 ---
 
-## 🧪 Testing
+## Testing
 
 WatchDawg maintains over 330 dedicated unit and integration tests driven by `pytest` and HTTP mocking via the `responses` library.
 
@@ -411,7 +411,7 @@ python -m pytest tests/test_cors.py -v
 
 ---
 
-## 🌍 Production Deployment
+## Production Deployment
 
 WatchDawg is engineered to scale globally.
 
@@ -434,7 +434,7 @@ WatchDawg embeds `ProxyFix` middleware natively. It respects 1 level of `X-Forwa
 
 ---
 
-## 🔒 Scanner Security (Protecting WatchDawg)
+## Scanner Security (Protecting WatchDawg)
 
 Executing active network checks requires internal hardening. WatchDawg defends itself proactively:
 
@@ -444,7 +444,7 @@ Executing active network checks requires internal hardening. WatchDawg defends i
 
 ---
 
-## 🧐 Limitations & Analysis Context
+## Limitations & Analysis Context
 
 While WatchDawg is highly effective at surfacing critical pre-deployment misconfigurations, specific architectural patterns should be noted:
 
@@ -454,7 +454,7 @@ While WatchDawg is highly effective at surfacing critical pre-deployment misconf
 
 ---
 
-## ⚖️ Legal & Ethical Use
+## Legal & Ethical Use
 
 WatchDawg is an active verification tool that transmits real HTTP requests—including diagnostic endpoints and authentication forms.
 
@@ -463,24 +463,24 @@ Deploying WatchDawg as a public-facing service necessitates rigorous terms of us
 
 ---
 
-## 🚑 Troubleshooting
+## Troubleshooting
 
 - **Symptom:** `"{check_name} check timed out after 60s"`
-  - *Context:* The target application may be exceedingly slow or aggressively throttling connections.
-  - *Resolution:* Focus the scanner on specific API subdomains rather than heavy homepage payloads.
+ - *Context:* The target application may be exceedingly slow or aggressively throttling connections.
+ - *Resolution:* Focus the scanner on specific API subdomains rather than heavy homepage payloads.
 - **Symptom:** `503 Server is busy`
-  - *Context:* The internal semaphore has reached its 10-concurrent scan limit.
-  - *Resolution:* Wait for previous sessions to clear. If self-hosting, modify the WSGI threading limits.
+ - *Context:* The internal semaphore has reached its 10-concurrent scan limit.
+ - *Resolution:* Wait for previous sessions to clear. If self-hosting, modify the WSGI threading limits.
 - **Symptom:** `429 Rate limit exceeded`
-  - *Context:* Triggered `flask-limiter` by issuing over 5 scans per minute.
-  - *Resolution:* Wait 60 seconds before initiating subsequent scans.
+ - *Context:* Triggered `flask-limiter` by issuing over 5 scans per minute.
+ - *Resolution:* Wait 60 seconds before initiating subsequent scans.
 - **Symptom:** CLI Localhost Failures
-  - *Context:* SSRF protections forcefully prevent local scanning by default.
-  - *Resolution:* Append `--allow-localhost` to the CLI command (e.g., `python app.py scan http://localhost:8000 --allow-localhost`).
+ - *Context:* SSRF protections forcefully prevent local scanning by default.
+ - *Resolution:* Append `--allow-localhost` to the CLI command (e.g., `python app.py scan http://localhost:8000 --allow-localhost`).
 
 ---
 
-## 🧩 Extending WatchDawg
+## Extending WatchDawg
 
 Expanding WatchDawg's security coverage is seamlessly supported.
 
@@ -492,6 +492,6 @@ Expanding WatchDawg's security coverage is seamlessly supported.
 ---
 
 <div align="center">
-    <strong>Empower Your Pre-Launch Workflow with WatchDawg</strong><br>
-    <em>Ensure Security Before You Ship.</em>
+  <strong>Empower Your Pre-Launch Workflow with WatchDawg</strong><br>
+  <em>Ensure Security Before You Ship.</em>
 </div>

@@ -782,14 +782,14 @@ ol {
     }
 
     .nav-left {
-        justify-content: center;
+        justify-content: flex-start;
         flex: none;
         width: 100%;
     }
 
     .brand-container {
         width: 100%;
-        justify-content: center;
+        justify-content: flex-start;
     }
 
     .nav-right {
