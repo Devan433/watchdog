@@ -2,7 +2,7 @@
 
 WatchDawg is a highly concurrent, pre-deployment security linter for web applications. It provides developers with an automated, lightweight, and blazingly fast security assessment to catch common misconfigurations before code reaches production. 
 
-**Live Demo:** [https://pyflow-swart.vercel.app/](https://pyflow-swart.vercel.app/)
+**Live Demo:** [https://watchdog-97l8.onrender.com/](https://watchdog-97l8.onrender.com/)
 
 Designed for CI/CD pipelines and local development, WatchDawg actively audits a target URL against a suite of security checks, assigning a weighted score and letter grade based on the severity of its findings.
 
