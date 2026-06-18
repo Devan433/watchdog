@@ -1,18 +1,12 @@
-import requests
 from core.models import Finding
-from config import TIMEOUT, HEADERS
-from core.http_client import safe_request, SafeRequestException
+from core.http_client import fetch_page, SafeRequestException
+
 
 def check_cookies(url: str) -> list[Finding]:
     findings = []
 
     try:
-        response = safe_request(
-            'GET',
-            url,
-            headers=HEADERS,
-            allow_redirects=True
-        )
+        response = fetch_page(url, allow_redirects=True)
     except SafeRequestException as e:
         return [Finding(
             check_name="Cookies Scan",
@@ -21,12 +15,11 @@ def check_cookies(url: str) -> list[Finding]:
             severity="critical",
             detail=f"Connection failed: {str(e)}",
             fix="Check the URL is correct and the site is live",
-            evidence=None
+            evidence=None,
         )]
 
     cookies = response.cookies
 
-    # ── No cookies at all ─────────────────────────────────────
     if not cookies:
         findings.append(Finding(
             check_name="Cookies",
@@ -35,11 +28,10 @@ def check_cookies(url: str) -> list[Finding]:
             severity="info",
             detail="No cookies set by this page",
             fix="No action needed",
-            evidence=None
+            evidence=None,
         ))
         return findings
 
-    # ── Check each cookie ─────────────────────────────────────
     for cookie in cookies:
         cookie_findings = check_single_cookie(cookie)
         findings.extend(cookie_findings)
@@ -51,16 +43,15 @@ def check_single_cookie(cookie) -> list[Finding]:
     findings = []
     name = cookie.name
 
-    # ── HttpOnly ──────────────────────────────────────────────
     name_lower = name.lower()
-    # CSRF tokens are intentionally readable by JS — exclude them from session detection
-    is_csrf_cookie = 'csrf' in name_lower or 'xsrf' in name_lower
+    is_csrf_cookie = "csrf" in name_lower or "xsrf" in name_lower
     is_session_cookie = (
-        any(x in name_lower for x in ['session', 'auth', 'token', 'jwt', 'sid'])
+        any(x in name_lower for x in ["session", "auth", "token", "jwt", "sid"])
         and not is_csrf_cookie
     )
 
-    if not cookie.has_nonstandard_attr("HttpOnly") and not cookie._rest.get("HttpOnly"):
+    httponly = cookie.has_nonstandard_attr("HttpOnly") or bool(cookie._rest.get("HttpOnly"))
+    if not httponly:
         if is_session_cookie:
             severity = "high"
             confidence = "high"
@@ -69,7 +60,7 @@ def check_single_cookie(cookie) -> list[Finding]:
             severity = "info"
             confidence = "low"
             detail = f"Cookie '{name}' is missing HttpOnly flag. JavaScript can read it, but it does not appear to be a session cookie (likely tracking/analytics)."
-            
+
         findings.append(Finding(
             check_name=f"Cookie: {name} — HttpOnly",
             category="cookies",
@@ -79,7 +70,7 @@ def check_single_cookie(cookie) -> list[Finding]:
             fix=f"If '{name}' is a session cookie, set HttpOnly. If it is an analytics/tracking cookie, it is safe to ignore.",
             evidence=f"Cookie: {name}",
             confidence=confidence,
-            is_third_party=False
+            is_third_party=False,
         ))
     else:
         findings.append(Finding(
@@ -91,21 +82,20 @@ def check_single_cookie(cookie) -> list[Finding]:
             fix="No action needed",
             evidence=f"Cookie: {name}",
             confidence="high",
-            is_third_party=False
+            is_third_party=False,
         ))
 
-    # ── Secure ────────────────────────────────────────────────
     if not cookie.secure:
         findings.append(Finding(
             check_name=f"Cookie: {name} — Secure",
             category="cookies",
             passed=False,
-            severity="medium",
+            severity="medium" if is_session_cookie else "low",
             detail=f"Cookie '{name}' is missing Secure flag. Cookie can be transmitted over HTTP.",
             fix=f"Set Secure flag on '{name}'.",
             evidence=f"Cookie: {name}",
             confidence="high",
-            is_third_party=False
+            is_third_party=False,
         ))
     else:
         findings.append(Finding(
@@ -117,10 +107,9 @@ def check_single_cookie(cookie) -> list[Finding]:
             fix="No action needed",
             evidence=f"Cookie: {name}",
             confidence="high",
-            is_third_party=False
+            is_third_party=False,
         ))
 
-    # ── SameSite ──────────────────────────────────────────────
     samesite = cookie._rest.get("SameSite") or cookie.has_nonstandard_attr("SameSite")
 
     if not samesite:
@@ -133,7 +122,7 @@ def check_single_cookie(cookie) -> list[Finding]:
             fix=f"Set SameSite on '{name}' if it is a sensitive cookie.",
             evidence=f"Cookie: {name}",
             confidence="high",
-            is_third_party=False
+            is_third_party=False,
         ))
     else:
         findings.append(Finding(
@@ -145,7 +134,7 @@ def check_single_cookie(cookie) -> list[Finding]:
             fix="No action needed",
             evidence=f"Cookie: {name}",
             confidence="high",
-            is_third_party=False
+            is_third_party=False,
         ))
 
     return findings

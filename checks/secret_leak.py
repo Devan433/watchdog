@@ -1,31 +1,42 @@
 import re
-import requests
-from bs4 import BeautifulSoup
-from core.models import Finding
-from config import TIMEOUT, HEADERS, SECRET_PATTERNS
-from core.http_client import safe_request, SafeRequestException
+from urllib.parse import urlparse
 
-THIRD_PARTY_DOMAINS = [
-    "googleapis.com", "gstatic.com", "jsdelivr.net", "unpkg.com", 
-    "cdnjs.cloudflare.com", "googletagmanager.com", "google-analytics.com",
-    "facebook.net", "stripe.com", "paypal.com", "cdn."
-]
+from bs4 import BeautifulSoup
+
+from core.models import Finding
+from config import HEADERS, SECRET_PATTERNS, THIRD_PARTY_DOMAINS
+from core.http_client import fetch_page, safe_request, SafeRequestException
+
 
 def is_third_party(url: str) -> bool:
-    if url == "main page": return False
-    return any(domain in url.lower() for domain in THIRD_PARTY_DOMAINS)
+    if url == "main page":
+        return False
+    try:
+        hostname = urlparse(url).hostname or ""
+    except Exception:
+        return False
+    hostname = hostname.lower()
+    return any(
+        hostname == domain or hostname.endswith(f".{domain}")
+        for domain in THIRD_PARTY_DOMAINS
+    )
+
+
+def _safe_source_label(source_name: str) -> str:
+    if source_name == "main page":
+        return source_name
+    try:
+        parsed = urlparse(source_name)
+        return parsed.path or "/"
+    except Exception:
+        return "external script"
+
 
 def check_secret_leak(url: str) -> list[Finding]:
     findings = []
 
-    # ── Fetch main page ───────────────────────────────────────
     try:
-        response = safe_request(
-            'GET',
-            url,
-            headers=HEADERS,
-            allow_redirects=True
-        )
+        response = fetch_page(url, allow_redirects=True)
     except SafeRequestException as e:
         return [Finding(
             check_name="Secret Leak Scan",
@@ -34,32 +45,28 @@ def check_secret_leak(url: str) -> list[Finding]:
             severity="critical",
             detail=f"Connection failed: {str(e)}",
             fix="Check the URL is correct and the site is live",
-            evidence=None
+            evidence=None,
         )]
 
-    # ── Collect all sources to scan ───────────────────────────
-    sources = []
-    sources.append(("main page", response.text))
+    sources = [("main page", response.text)]
 
     js_urls = extract_js_urls(url, response.text)
-    for js_url in js_urls[:5]:  # cap at 5 JS files to avoid timeout
+    for js_url in js_urls[:5]:
         js_content = fetch_js(js_url)
         if js_content:
             sources.append((js_url, js_content))
 
-    # ── Scan all sources for secrets ──────────────────────────
     leaked = []
     for source_name, content in sources:
         for secret_type, pattern in SECRET_PATTERNS.items():
             matches = re.findall(pattern, content)
             if matches:
                 for match in set(matches):
-                    # Basic validation: ignore obvious dummy strings
-                    if "example" in match.lower() or "123456789" in match or "your_api_key" in match.lower():
+                    token = match[-1] if isinstance(match, tuple) else match
+                    if "example" in token.lower() or "123456789" in token or "your_api_key" in token.lower():
                         continue
-                    leaked.append((secret_type, source_name, match))
+                    leaked.append((secret_type, source_name, token))
 
-    # ── Build findings ────────────────────────────────────────
     if not leaked:
         findings.append(Finding(
             check_name="Secret Leak",
@@ -68,19 +75,20 @@ def check_secret_leak(url: str) -> list[Finding]:
             severity="info",
             detail="No exposed API keys or secrets detected in page source or JS files",
             fix="No action needed",
-            evidence=None
+            evidence=None,
         ))
         return findings
 
     for secret_type, source_name, match in leaked:
         redacted = redact(match)
         third_party = is_third_party(source_name)
-        
+        safe_label = _safe_source_label(source_name)
+
         severity = "critical"
         confidence = "high"
-        detail = f"Potential {secret_type} found in {source_name}"
+        detail = f"Potential {secret_type} found in {safe_label}"
         fix = get_fix(secret_type)
-        
+
         if third_party:
             severity = "info"
             confidence = "low"
@@ -99,7 +107,7 @@ def check_secret_leak(url: str) -> list[Finding]:
             fix=fix,
             evidence=redacted,
             confidence=confidence,
-            is_third_party=third_party
+            is_third_party=third_party,
         ))
 
     return findings
@@ -112,7 +120,6 @@ def extract_js_urls(base_url: str, html: str) -> list[str]:
     for tag in soup.find_all("script", src=True):
         src = tag["src"]
 
-        # handle relative URLs
         if src.startswith("//"):
             src = "https:" + src
         elif src.startswith("/"):
@@ -128,11 +135,7 @@ def extract_js_urls(base_url: str, html: str) -> list[str]:
 
 def fetch_js(url: str) -> str | None:
     try:
-        response = safe_request(
-            'GET',
-            url,
-            headers=HEADERS
-        )
+        response = safe_request("GET", url, headers=HEADERS)
         if response.status_code == 200:
             return response.text
         return None
@@ -141,7 +144,6 @@ def fetch_js(url: str) -> str | None:
 
 
 def redact(match: str) -> str:
-    # show first 6 and last 4 chars only — enough to identify, not enough to use
     if len(match) <= 10:
         return "***REDACTED***"
     return match[:6] + "..." + match[-4:]

@@ -3,3 +3,5 @@ requests
 beautifulsoup4
 waitress
 flask-limiter
+pytest
+responses

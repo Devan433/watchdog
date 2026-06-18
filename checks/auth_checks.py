@@ -1,30 +1,24 @@
 import uuid
-import requests
+import concurrent.futures
+
 from core.models import Finding
-from config import TIMEOUT, HEADERS
-from core.http_client import safe_request, SafeRequestException
+from config import HEADERS
+from core.http_client import safe_request
+
+PROBE_WORKERS = 6
+
+DEFAULT_CREDENTIALS = [
+    {"username": "admin", "password": "admin"},
+    {"username": "admin", "password": "password"},
+    {"username": "admin", "password": "123456"},
+]
+
 
 def check_auth(url: str) -> list[Finding]:
     findings = []
-
     base_url = url.rstrip("/")
+    baseline_length = _get_baseline_length(base_url)
 
-    # ── Establish 404 Baseline (SPA False Positive Check) ─────
-    baseline_length = None
-    baseline_path = f"/watchdog-auth-test-{uuid.uuid4().hex}"
-    try:
-        baseline_resp = safe_request(
-            'GET',
-            f"{base_url}{baseline_path}",
-            headers=HEADERS,
-            allow_redirects=False
-        )
-        if baseline_resp.status_code == 200:
-            baseline_length = len(baseline_resp.content)
-    except Exception:
-        pass
-
-    # ── Check 1: Admin routes without auth ────────────────────
     admin_paths = [
         "/admin",
         "/admin/dashboard",
@@ -34,12 +28,6 @@ def check_auth(url: str) -> list[Finding]:
         "/panel",
     ]
 
-    for path in admin_paths:
-        result = probe_auth_required(base_url, path, baseline_length)
-        if result:
-            findings.append(result)
-
-    # ── Check 2: API endpoints without auth ───────────────────
     api_paths = [
         "/api/users",
         "/api/admin",
@@ -49,24 +37,38 @@ def check_auth(url: str) -> list[Finding]:
         "/api/v2/users",
     ]
 
-    for path in api_paths:
-        result = probe_api_auth(base_url, path, baseline_length)
-        if result:
-            findings.append(result)
-
-    # ── Check 3: Common default credentials ───────────────────
     login_paths = [
         "/login",
         "/admin/login",
         "/wp-login.php",
     ]
 
+    probe_tasks = []
+    for path in admin_paths:
+        probe_tasks.append(("admin", path))
+    for path in api_paths:
+        probe_tasks.append(("api", path))
     for path in login_paths:
-        result = probe_default_credentials(base_url, path)
-        if result:
-            findings.append(result)
+        probe_tasks.append(("login", path))
 
-    # ── No issues found ───────────────────────────────────────
+    with concurrent.futures.ThreadPoolExecutor(max_workers=PROBE_WORKERS) as executor:
+        futures = []
+        for probe_type, path in probe_tasks:
+            if probe_type == "admin":
+                futures.append(executor.submit(probe_auth_required, base_url, path, baseline_length))
+            elif probe_type == "api":
+                futures.append(executor.submit(probe_api_auth, base_url, path, baseline_length))
+            else:
+                futures.append(executor.submit(probe_default_credentials, base_url, path))
+
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                result = future.result()
+                if result:
+                    findings.append(result)
+            except Exception:
+                continue
+
     if not findings:
         findings.append(Finding(
             check_name="Auth Checks",
@@ -75,31 +77,44 @@ def check_auth(url: str) -> list[Finding]:
             severity="info",
             detail="No obvious authentication issues detected",
             fix="No action needed",
-            evidence=None
+            evidence=None,
         ))
 
     return findings
+
+
+def _get_baseline_length(base_url: str) -> int | None:
+    baseline_path = f"/watchdog-auth-test-{uuid.uuid4().hex}"
+    try:
+        baseline_resp = safe_request(
+            "GET",
+            f"{base_url}{baseline_path}",
+            headers=HEADERS,
+            allow_redirects=False,
+        )
+        if baseline_resp.status_code == 200:
+            return len(baseline_resp.content)
+    except Exception:
+        pass
+    return None
 
 
 def probe_auth_required(base_url: str, path: str, baseline_length: int | None = None) -> Finding | None:
     full_url = f"{base_url}{path}"
 
     try:
-        # first request: no cookies, no auth headers
         response = safe_request(
-            'GET',
+            "GET",
             full_url,
             headers=HEADERS,
-            allow_redirects=False
+            allow_redirects=False,
         )
     except Exception:
         return None
 
     status = response.status_code
 
-    # 200 with no auth = potential problem
     if status == 200:
-        # SPA false positive check — if response matches the baseline 404 page, skip it
         if baseline_length is not None:
             content_len = len(response.content)
             if baseline_length > 0:
@@ -116,10 +131,9 @@ def probe_auth_required(base_url: str, path: str, baseline_length: int | None = 
             severity="high",
             detail=f"{path} returned HTTP 200 without any authentication. Admin interface may be publicly accessible.",
             fix=f"Protect {path} with authentication middleware. In Flask: use @login_required decorator. In Express: use passport.js middleware.",
-            evidence=f"GET {full_url} → {status}"
+            evidence=f"GET {full_url} → {status}",
         )
 
-    # 302 to login page = correctly protected
     if status == 302:
         location = response.headers.get("location", "")
         if "login" in location.lower() or "signin" in location.lower():
@@ -130,7 +144,7 @@ def probe_auth_required(base_url: str, path: str, baseline_length: int | None = 
                 severity="info",
                 detail=f"{path} correctly redirects to login page",
                 fix="No action needed",
-                evidence=f"GET {full_url} → {status} → {location}"
+                evidence=f"GET {full_url} → {status} → {location}",
             )
 
     return None
@@ -140,12 +154,11 @@ def probe_api_auth(base_url: str, path: str, baseline_length: int | None = None)
     full_url = f"{base_url}{path}"
 
     try:
-        # request with no auth header and no cookies
         response = safe_request(
-            'GET',
+            "GET",
             full_url,
             headers=HEADERS,
-            allow_redirects=False
+            allow_redirects=False,
         )
     except Exception:
         return None
@@ -155,7 +168,6 @@ def probe_api_auth(base_url: str, path: str, baseline_length: int | None = None)
     if status != 200:
         return None
 
-    # SPA false positive check
     if baseline_length is not None:
         content_len = len(response.content)
         if baseline_length > 0:
@@ -165,13 +177,11 @@ def probe_api_auth(base_url: str, path: str, baseline_length: int | None = None)
         elif content_len == 0:
             return None
 
-    # ── API returned 200 — check if it has real data ──────────
     content_type = response.headers.get("content-type", "")
 
     if "application/json" in content_type:
         try:
             data = response.json()
-            # non-empty JSON response without auth = problem
             if data and (isinstance(data, list) and len(data) > 0
                          or isinstance(data, dict) and len(data) > 0):
                 return Finding(
@@ -181,7 +191,7 @@ def probe_api_auth(base_url: str, path: str, baseline_length: int | None = None)
                     severity="high",
                     detail=f"{path} returns JSON data without authentication. User data may be publicly readable.",
                     fix=f"Add authentication to {path}. Check for Authorization header or valid session cookie before returning data.",
-                    evidence=f"GET {full_url} → 200 JSON ({len(str(data))} chars)"
+                    evidence=f"GET {full_url} → 200 JSON ({len(str(data))} chars)",
                 )
         except Exception:
             return None
@@ -194,49 +204,61 @@ def probe_default_credentials(base_url: str, path: str) -> Finding | None:
 
     try:
         response = safe_request(
-            'GET',
+            "GET",
             full_url,
             headers=HEADERS,
-            allow_redirects=False
+            allow_redirects=False,
         )
     except Exception:
         return None
 
-    status = response.status_code
-
-    # login page exists — try default credentials
-    if status != 200:
+    if response.status_code != 200:
         return None
 
-    default_credentials = [
-        {"username": "admin", "password": "admin"},
-        {"username": "admin", "password": "password"},
-        {"username": "admin", "password": "123456"},
-    ]
-
-    for creds in default_credentials:
-        try:
-            post_response = safe_request(
-                'POST',
-                full_url,
-                json=creds,  # Use JSON since modern APIs expect it
-                headers=HEADERS,
-                allow_redirects=False
-            )
-            # successful login redirects away from login page
-            if post_response.status_code in [301, 302]:
-                location = post_response.headers.get("location", "")
-                if "login" not in location.lower():
-                    return Finding(
-                        check_name=f"Default Credentials Work: {path}",
-                        category="auth",
-                        passed=False,
-                        severity="critical",
-                        detail=f"Login at {path} accepted default credentials: {creds['username']}:{creds['password']}",
-                        fix="Change default credentials immediately. Enforce strong password policy. Consider adding rate limiting and 2FA.",
-                        evidence=f"POST {full_url} with {creds['username']}:{creds['password']} → {post_response.status_code}"
-                    )
-        except Exception:
-            continue
+    for creds in DEFAULT_CREDENTIALS:
+        for content_type, body in (
+            ("json", {"json": creds}),
+            ("form", {"data": creds}),
+        ):
+            try:
+                headers = {**HEADERS}
+                if content_type == "json":
+                    headers["Content-Type"] = "application/json"
+                post_response = safe_request(
+                    "POST",
+                    full_url,
+                    headers=headers,
+                    allow_redirects=False,
+                    **body,
+                )
+                if post_response.status_code in (301, 302, 303, 307, 308):
+                    location = post_response.headers.get("location", "")
+                    if "login" not in location.lower():
+                        return Finding(
+                            check_name=f"Default Credentials Work: {path}",
+                            category="auth",
+                            passed=False,
+                            severity="critical",
+                            detail=f"Login at {path} accepted default credentials: {creds['username']}:{creds['password']}",
+                            fix="Change default credentials immediately. Enforce strong password policy. Consider adding rate limiting and 2FA.",
+                            evidence=f"POST {full_url} ({content_type}) with {creds['username']}:{creds['password']} → {post_response.status_code}",
+                        )
+                if post_response.status_code == 200 and content_type == "json":
+                    try:
+                        data = post_response.json()
+                        if isinstance(data, dict) and data.get("token"):
+                            return Finding(
+                                check_name=f"Default Credentials Work: {path}",
+                                category="auth",
+                                passed=False,
+                                severity="critical",
+                                detail=f"Login at {path} returned a token for default credentials: {creds['username']}:{creds['password']}",
+                                fix="Change default credentials immediately. Enforce strong password policy. Consider adding rate limiting and 2FA.",
+                                evidence=f"POST {full_url} ({content_type}) with {creds['username']}:{creds['password']} → 200 token response",
+                            )
+                    except Exception:
+                        pass
+            except Exception:
+                continue
 
     return None

@@ -1,11 +1,11 @@
 from core.models import ScanResult, Finding
 from core.scorer import get_severity_breakdown
 
+
 def format_result(result: ScanResult) -> dict:
 
     breakdown = get_severity_breakdown(result.findings)
 
-    # ── Group findings by category ────────────────────────────
     categories = {}
     for finding in result.findings:
         cat = finding.category
@@ -13,7 +13,6 @@ def format_result(result: ScanResult) -> dict:
             categories[cat] = []
         categories[cat].append(format_finding(finding))
 
-    # ── Build final response ──────────────────────────────────
     return {
         "url":      result.url,
         "score":    result.score,
@@ -24,6 +23,7 @@ def format_result(result: ScanResult) -> dict:
             "high":     breakdown["high"],
             "medium":   breakdown["medium"],
             "low":      breakdown["low"],
+            "info":     breakdown["info"],
             "passed":   breakdown["passed"],
         },
         "categories": categories,
@@ -33,13 +33,15 @@ def format_result(result: ScanResult) -> dict:
 
 def format_finding(finding: Finding) -> dict:
     return {
-        "check_name": finding.check_name,
-        "passed":     finding.passed,
-        "severity":   finding.severity,
-        "detail":     finding.detail,
-        "fix":        finding.fix,
-        "evidence":   finding.evidence,
-        "fix_prompt": build_fix_prompt(finding),
+        "check_name":     finding.check_name,
+        "passed":         finding.passed,
+        "severity":       finding.severity,
+        "detail":         finding.detail,
+        "fix":            finding.fix,
+        "evidence":       finding.evidence,
+        "confidence":     finding.confidence,
+        "is_third_party": finding.is_third_party,
+        "fix_prompt":     build_fix_prompt(finding),
     }
 
 
@@ -62,12 +64,13 @@ def format_error(url: str, error: str) -> dict:
         "url":      url,
         "score":    0,
         "grade":    "F",
-        "summary":  "Scan failed — could not reach the target URL",
+        "summary":  "Scan failed — could not complete analysis",
         "breakdown": {
             "critical": 0,
             "high":     0,
             "medium":   0,
             "low":      0,
+            "info":     0,
             "passed":   0,
         },
         "categories": {},
