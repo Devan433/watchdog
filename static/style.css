@@ -210,8 +210,8 @@ ol {
 }
 
 .brand-logo {
-    height: 48px;
-    width: 48px;
+    height: 88px;
+    width: 88px;
     object-fit: contain;
 }
 
@@ -775,17 +775,17 @@ ol {
         height: auto;
         padding: 1rem;
     }
-    
+
     .nav-container {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .nav-left {
         justify-content: center;
         flex: none;
     }
-    
+
     .nav-right {
         justify-content: center;
         flex: none;
@@ -817,7 +817,7 @@ ol {
         flex-direction: column;
         gap: 0.5rem;
     }
-    
+
     .url-input {
         border-radius: var(--radius-md);
     }
